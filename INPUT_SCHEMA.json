@@ -1,0 +1,77 @@
+{
+  "title": "TikTok Scraper Input",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "hashtags": {
+      "title": "Hashtags to scrape",
+      "type": "array",
+      "description": "List of TikTok hashtags (without #). Example: ['funny', 'viral']",
+      "editor": "stringList",
+      "example": ["funny", "viral", "trending"]
+    },
+    "profiles": {
+      "title": "TikTok profiles (usernames)",
+      "type": "array",
+      "description": "List of TikTok usernames (without @). Example: ['charlidamelio']",
+      "editor": "stringList",
+      "example": ["charlidamelio", "khaby.lame"]
+    },
+    "videoUrls": {
+      "title": "TikTok video URLs",
+      "type": "array",
+      "description": "Direct TikTok video URLs to scrape",
+      "editor": "stringList",
+      "example": ["https://www.tiktok.com/@user/video/1234567890"]
+    },
+    "searchKeywords": {
+      "title": "Search keywords",
+      "type": "array",
+      "description": "Keywords to search on TikTok",
+      "editor": "stringList",
+      "example": ["funny cats", "cooking recipes"]
+    },
+    "maxVideosPerSource": {
+      "title": "Max videos per source",
+      "type": "integer",
+      "description": "Maximum number of videos to scrape per hashtag/profile/keyword",
+      "default": 20,
+      "minimum": 1,
+      "maximum": 500,
+      "editor": "number"
+    },
+    "scrapeComments": {
+      "title": "Scrape comments",
+      "type": "boolean",
+      "description": "Whether to scrape comments for each video (slower, costs more)",
+      "default": false,
+      "editor": "checkbox"
+    },
+    "maxCommentsPerVideo": {
+      "title": "Max comments per video",
+      "type": "integer",
+      "description": "Maximum number of comments to scrape per video (only if scrapeComments is true)",
+      "default": 20,
+      "minimum": 1,
+      "maximum": 200,
+      "editor": "number"
+    },
+    "scrapeMusic": {
+      "title": "Scrape music/audio info",
+      "type": "boolean",
+      "description": "Whether to include music/audio data in output",
+      "default": true,
+      "editor": "checkbox"
+    },
+    "proxyConfiguration": {
+      "title": "Proxy configuration",
+      "type": "object",
+      "description": "Proxy settings for scraping",
+      "editor": "proxy",
+      "prefill": {
+        "useApifyProxy": true,
+        "apifyProxyGroups": ["RESIDENTIAL"]
+      }
+    }
+  }
+}

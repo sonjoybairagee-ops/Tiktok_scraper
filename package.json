@@ -1,0 +1,14 @@
+{
+  "name": "tiktok-scraper-actor",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/main.js",
+  "dependencies": {
+    "apify": "^3.2.2",
+    "crawlee": "^3.5.8",
+    "playwright": "^1.40.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 
