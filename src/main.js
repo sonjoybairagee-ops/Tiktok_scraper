@@ -6,7 +6,19 @@ import { processVideoItems, processComment } from './dataProcessor.js';
 
 await Actor.init();
 
-const input = await Actor.getInput();
+let input = await Actor.getInput();
+
+// Fallback default input — prevents crash when Apify's automated QA test
+// runs the actor with no input or an empty prefilled schema.
+if (!input || Object.keys(input).length === 0 ||
+    (!input.hashtags?.length && !input.profiles?.length && !input.videoUrls?.length && !input.searchKeywords?.length)) {
+    log.warning('No usable input provided — falling back to default sample input.');
+    input = {
+        ...input,
+        hashtags: input?.hashtags?.length ? input.hashtags : ['funnyvideos'],
+    };
+}
+
 const {
     hashtags = [],
     profiles = [],
@@ -17,11 +29,7 @@ const {
     maxCommentsPerVideo = 20,
     scrapeMusic = true,
     proxyConfiguration: proxyConfig,
-} = input || {};
-
-if (!hashtags.length && !profiles.length && !videoUrls.length && !searchKeywords.length) {
-    throw new Error('No input provided!');
-}
+} = input;
 
 log.info('Starting TikTok Scraper (API Intercept + HTML Fallback Mode)...', {
     hashtags: hashtags.length,

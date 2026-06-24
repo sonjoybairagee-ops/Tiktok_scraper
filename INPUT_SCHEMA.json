@@ -8,6 +8,8 @@
       "type": "array",
       "description": "List of TikTok hashtags (without #). Example: ['funny', 'viral']",
       "editor": "stringList",
+      "prefill": ["funny"],
+      "default": ["funny"],
       "example": ["funny", "viral", "trending"]
     },
     "profiles": {
