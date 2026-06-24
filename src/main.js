@@ -6,7 +6,19 @@ import { processVideoItems, processComment } from './dataProcessor.js';
 
 await Actor.init();
 
-const input = await Actor.getInput();
+let input = await Actor.getInput();
+
+// Fallback default input — prevents crash when Apify's automated QA test
+// runs the actor with no input or an empty prefilled schema.
+if (!input || Object.keys(input).length === 0 ||
+    (!input.hashtags?.length && !input.profiles?.length && !input.videoUrls?.length && !input.searchKeywords?.length)) {
+    log.warning('No usable input provided — falling back to default sample input.');
+    input = {
+        ...input,
+        hashtags: input?.hashtags?.length ? input.hashtags : ['funnyvideos'],
+    };
+}
+
 const {
     hashtags = [],
     profiles = [],
@@ -17,11 +29,7 @@ const {
     maxCommentsPerVideo = 20,
     scrapeMusic = true,
     proxyConfiguration: proxyConfig,
-} = input || {};
-
-if (!hashtags.length && !profiles.length && !videoUrls.length && !searchKeywords.length) {
-    throw new Error('No input provided!');
-}
+} = input;
 
 log.info('Starting TikTok Scraper (API Intercept + HTML Fallback Mode)...', {
     hashtags: hashtags.length,
@@ -98,6 +106,24 @@ const crawler = new PlaywrightCrawler({
             log.info('TikTok content element found');
         } catch {
             log.warning('Timed out waiting for TikTok elements — will still try to extract data');
+
+            // DEBUG: capture what was actually served so we can diagnose
+            // CAPTCHA / bot-detection vs outdated selectors vs empty page.
+            try {
+                const pageTitle = await page.title();
+                const pageUrl = page.url();
+                const bodyText = await page.evaluate(() => document.body?.innerText?.slice(0, 500) || '');
+                log.warning(`DEBUG page info — title: "${pageTitle}", url: ${pageUrl}`);
+                log.warning(`DEBUG body text snippet: ${bodyText.replace(/\s+/g, ' ')}`);
+
+                const screenshotBuffer = await page.screenshot({ fullPage: false });
+                const kvStore = await Actor.openKeyValueStore();
+                const key = `DEBUG-SCREENSHOT-${Date.now()}`;
+                await kvStore.setValue(key, screenshotBuffer, { contentType: 'image/png' });
+                log.warning(`DEBUG screenshot saved to key-value store as "${key}" — check Storage tab.`);
+            } catch (debugErr) {
+                log.warning(`DEBUG capture failed: ${debugErr.message}`);
+            }
         }
 
         // Additional wait for API responses to arrive
