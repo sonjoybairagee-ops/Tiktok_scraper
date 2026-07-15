@@ -8,28 +8,28 @@
       "type": "array",
       "description": "List of TikTok hashtags (without #). Example: ['funny', 'viral']",
       "editor": "stringList",
-      "example": ["funny", "viral", "trending"]
+      "prefill": ["funny", "viral"]
     },
     "profiles": {
       "title": "TikTok profiles (usernames)",
       "type": "array",
       "description": "List of TikTok usernames (without @). Example: ['charlidamelio']",
       "editor": "stringList",
-      "example": ["charlidamelio", "khaby.lame"]
+      "prefill": ["charlidamelio"]
     },
     "videoUrls": {
       "title": "TikTok video URLs",
       "type": "array",
       "description": "Direct TikTok video URLs to scrape",
       "editor": "stringList",
-      "example": ["https://www.tiktok.com/@user/video/1234567890"]
+      "prefill": ["https://www.tiktok.com/@tiktok/video/7361007731482084613"]
     },
     "searchKeywords": {
       "title": "Search keywords",
       "type": "array",
       "description": "Keywords to search on TikTok",
       "editor": "stringList",
-      "example": ["funny cats", "cooking recipes"]
+      "prefill": ["funny cats"]
     },
     "maxVideosPerSource": {
       "title": "Max videos per source",
@@ -66,7 +66,7 @@
     "proxyConfiguration": {
       "title": "Proxy configuration",
       "type": "object",
-      "description": "Proxy settings for scraping",
+      "description": "⚠️ Highly Recommended: Use RESIDENTIAL proxies to avoid TikTok blocks.",
       "editor": "proxy",
       "prefill": {
         "useApifyProxy": true,
