@@ -2,7 +2,9 @@
 
 Extract data from TikTok — videos, hashtags, profiles, search results, comments, and music info.
 
-## Features
+---
+
+## ✨ Features
 
 - **Hashtag scraping** — Scrape videos from any hashtag (e.g. `#viral`, `#funny`)
 - **Profile scraping** — Get all videos + full profile info for any TikTok account
@@ -11,7 +13,9 @@ Extract data from TikTok — videos, hashtags, profiles, search results, comment
 - **Comments** — Optional: scrape top comments for each video
 - **Music/Audio info** — Get song title, author, and audio details
 
-## Input
+---
+
+## ⚙️ Input Configuration
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -25,7 +29,9 @@ Extract data from TikTok — videos, hashtags, profiles, search results, comment
 | `scrapeMusic` | `boolean` | Whether to include music info (default: true) |
 | `proxyConfiguration` | `object` | Proxy settings (Apify Residential recommended) |
 
-## Output
+---
+
+## 📤 Output Example
 
 Each result is saved to the **Dataset**. Example output for a video:
 
@@ -75,22 +81,3 @@ Each result is saved to the **Dataset**. Example output for a video:
     }
   ]
 }
-```
-
-## Proxy
-
-**Residential proxies are required.** TikTok blocks datacenter IPs aggressively. Use Apify Residential Proxy for best results.
-
-## Cost estimate
-
-| Action | Approx. cost |
-|--------|-------------|
-| 100 videos (no comments) | ~$0.50 |
-| 100 videos + comments | ~$1.50 |
-| 1 profile (50 videos) | ~$0.30 |
-
-## Notes
-
-- TikTok frequently changes its website structure. If scraped data is missing, the actor may need an update.
-- Scraping is rate-limited intentionally to avoid bans.
-- This actor uses **Playwright** with stealth fingerprinting to mimic real browsers.
