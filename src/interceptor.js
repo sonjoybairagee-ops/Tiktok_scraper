@@ -1,10 +1,9 @@
-import { log } from 'apify';
-
 /**
- * Dual-mode data extraction:
- * 1. Network interception (updated API patterns for 2025/2026)
- * 2. __NEXT_DATA__ / SIGI_STATE fallback from page HTML
+ * TikTok Network Interceptor & HTML Fallback Extractor
+ * Dual-mode data extraction with updated API patterns for 2026.
  */
+
+import { log } from 'apify';
 
 // Updated API patterns — TikTok now uses /api/2/ and /api/v2/ namespaces
 const API_PATTERNS = {
@@ -49,7 +48,15 @@ export async function interceptApiResponses(page, requestType) {
                 jsonStr = match[0];
             }
 
-            const json = JSON.parse(jsonStr);
+            // ✅ IMPROVEMENT: Safe JSON parsing
+            let json;
+            try {
+                json = JSON.parse(jsonStr);
+            } catch (e) {
+                log.debug(`Failed to parse JSON from: ${url.split('?')[0]}`);
+                return;
+            }
+
             log.debug(`Intercepted API: ${url.split('?')[0]}`);
 
             processApiResponse(url, json, {
@@ -59,8 +66,9 @@ export async function interceptApiResponses(page, requestType) {
                 setCursor: (c, more) => { nextCursor = c; hasMore = more; },
             });
 
-        } catch {
-            // Ignore parse errors
+        } catch (e) {
+            // Silently ignore parse errors
+            log.debug(`Response intercept error: ${e.message}`);
         }
     });
 
@@ -82,8 +90,8 @@ export async function interceptApiResponses(page, requestType) {
             }
 
             return {
-                videoItems: collectedVideoItems,
-                comments: collectedComments,
+                videoItems: [...new Set(collectedVideoItems.map(JSON.stringify))].map(JSON.parse), // Dedupe
+                comments: [...new Set(collectedComments.map(JSON.stringify))].map(JSON.parse),
                 profileData,
                 nextCursor,
                 hasMore,
@@ -205,7 +213,9 @@ async function extractFromPageHtml(page, requestType) {
                     }
                 }
             }
-        } catch {}
+        } catch (e) {
+            // Silently ignore HTML parse errors
+        }
 
         // Method 2: SIGI_STATE (older/fallback TikTok pages)
         try {
@@ -246,7 +256,9 @@ async function extractFromPageHtml(page, requestType) {
                     }
                 }
             }
-        } catch {}
+        } catch (e) {
+            // Silently ignore HTML parse errors
+        }
 
         return results;
     }, requestType);
@@ -268,5 +280,126 @@ function buildProfileData(user, stats) {
             videoCount: stats?.videoCount ?? stats?.aweme_count ?? null,
         },
         scrapedAt: new Date().toISOString(),
+    };
+}
+
+/**
+ * Maps a raw TikTok API video item to a clean, consistent output format.
+ * The raw item comes directly from TikTok's internal API — same structure
+ * across hashtag, profile, search, and video detail endpoints.
+ */
+export function processVideoItems(item, { sourceLabel, scrapeMusic = true }) {
+    if (!item || !item.id) return null;
+
+    const author = item.author || {};
+    const authorStats = item.authorStats || author.stats || {};
+    const stats = item.stats || {};
+    const video = item.video || {};
+    const music = item.music || {};
+    const challenges = item.challenges || []; // hashtags
+
+    return {
+        // ── Core info ──
+        videoId: item.id,
+        videoUrl: `https://www.tiktok.com/@${author.uniqueId}/video/${item.id}`,
+        description: item.desc || '',
+        hashtags: challenges.map((c) => c.title).filter(Boolean),
+        createTime: item.createTime
+            ? new Date(item.createTime * 1000).toISOString()
+            : null,
+        shareUrl: item.video?.shareUrl || null,
+        scrapedAt: new Date().toISOString(),
+        sourceLabel,
+
+        // ── Author / Profile ──
+        author: {
+            id: author.id || null,
+            uniqueId: author.uniqueId || null,
+            nickname: author.nickname || null,
+            avatarUrl: author.avatarMedium || author.avatarThumb || null,
+            verified: author.verified || false,
+            signature: author.signature || '',
+            region: author.region || null,
+            // Stats (available when scraping profiles, sometimes in video list too)
+            followerCount: authorStats.followerCount ?? null,
+            followingCount: authorStats.followingCount ?? null,
+            heartCount: authorStats.heartCount ?? null,
+            videoCount: authorStats.videoCount ?? null,
+            profileUrl: author.uniqueId
+                ? `https://www.tiktok.com/@${author.uniqueId}`
+                : null,
+        },
+
+        // ── Video stats ──
+        stats: {
+            playCount: stats.playCount ?? null,
+            likeCount: stats.diggCount ?? null,
+            commentCount: stats.commentCount ?? null,
+            shareCount: stats.shareCount ?? null,
+            collectCount: stats.collectCount ?? null,
+        },
+
+        // ── Video technical info ──
+        video: {
+            width: video.width || null,
+            height: video.height || null,
+            duration: video.duration || null,
+            ratio: video.ratio || null,
+            coverUrl: video.cover || video.originCover || null,
+            dynamicCoverUrl: video.dynamicCover || null,
+            downloadUrl: video.downloadAddr || null,
+            format: video.format || null,
+            bitrateInfo: (video.bitrateInfo || []).map((b) => ({
+                bitrate: b.Bitrate,
+                codecType: b.CodecType,
+                playAddr: b.PlayAddr?.UrlList?.[0] || null,
+            })),
+        },
+
+        // ── Music / Audio ──
+        ...(scrapeMusic && {
+            music: {
+                id: music.id || null,
+                title: music.title || null,
+                authorName: music.authorName || null,
+                original: music.original || false,
+                coverUrl: music.coverMedium || music.coverThumb || null,
+                duration: music.duration || null,
+                playUrl: music.playUrl || null,
+                album: music.album || null,
+            },
+        }),
+
+        // ── Additional metadata ──
+        isAd: item.isAd || false,
+        duetEnabled: item.duetEnabled ?? null,
+        stitchEnabled: item.stitchEnabled ?? null,
+        shareEnabled: item.shareEnabled ?? null,
+        diversificationId: item.diversificationId || null,
+    };
+}
+
+/**
+ * Maps raw TikTok API comment to clean output format.
+ */
+export function processComment(comment) {
+    if (!comment) return null;
+
+    const user = comment.user || {};
+    return {
+        commentId: comment.cid || null,
+        text: comment.text || '',
+        likeCount: comment.digg_count ?? 0,
+        replyCount: comment.reply_comment_total ?? 0,
+        createTime: comment.create_time
+            ? new Date(comment.create_time * 1000).toISOString()
+            : null,
+        user: {
+            userId: user.uid || null,
+            uniqueId: user.unique_id || null,
+            nickname: user.nickname || null,
+            avatarUrl: user.avatar_thumb?.url_list?.[0] || null,
+            verified: user.custom_verify ? true : false,
+        },
     };
 }
